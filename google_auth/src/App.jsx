@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { googleLogout, useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useAuth } from "./context/AuthProvider";
@@ -10,39 +10,38 @@ function App() {
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-    setUser(tokenResponse);
+      setUser(tokenResponse);
+      fetchUserProfile(tokenResponse.access_token);
     },
     onError: (error) => console.log("Login Failed:", error),
   });
 
-  useEffect(() => {
-    if (user) {
-      axios
-        .get(
-          `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`,
-          {
-            headers: {
-              Authorization: `Bearer ${user.access_token}`,
-              Accept: "application/json",
-            },
-          }
-        )
-        .then((res) => {
-          setUser({
-            ...user,
-            picture: res.data.picture, 
-            name: res.data.name,
-            email: res.data.email,
-            id: res.data.sub, 
-          });
-          setProfile(res.data);
-        })
-        .catch((err) => console.log(err));
-    }
-  }, [user]);
+  const fetchUserProfile = (accessToken) => {
+    axios
+      .get(
+        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${accessToken}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+        }
+      )
+      .then((res) => {
+        setUser({
+          ...user,
+          picture: res.data.picture,
+          name: res.data.name,
+          email: res.data.email,
+        });
+        setProfile(res.data);
+      })
+      .catch((err) => console.log(err));
+  };
 
   const logOut = () => {
     googleLogout();
+    setUser(null);
     setProfile(null);
   };
 
@@ -60,7 +59,7 @@ function App() {
         <div>
           <button onClick={() => login()}>Sign in with Google</button>
         </div>
-      )} 
+      )}
     </div>
   );
 }
